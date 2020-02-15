@@ -20,6 +20,7 @@ Do not change the signature of the apriori and alternative_miner methods as they
 
 __authors__ = "<write here your group, first name(s) and last name(s)>"
 """
+from datetime import datetime
 
 
 class Dataset:
@@ -57,7 +58,17 @@ class Dataset:
 def apriori(filepath, minFrequency):
 	"""Runs the apriori algorithm on the specified file with the given minimum frequency"""
 	# TODO: implementation of the apriori algorithm
-	print("Not implemented")
+	dataset = Dataset(filepath)
+	print("Dataset items ")
+	dItems = dict.fromkeys(dataset.items, 0)
+	print("Dataset transactions ")
+	for l in dataset.transactions:
+		for e in l:
+			dItems[e] += 1
+	#newDict = dict(filter(lambda elem: dItems[elem]>=minFrequency, dataset.items))
+	print(len(dataset.transactions))
+	newDict = {key: value for (key, value) in dItems.items() if dItems[key]/len(dataset.transactions) >= minFrequency}
+	print("new Dict ", newDict)
 
 
 def alternative_miner(filepath, minFrequency):
@@ -65,6 +76,7 @@ def alternative_miner(filepath, minFrequency):
 	# TODO: either second implementation of the apriori algorithm or implementation of the depth first search algorithm
 	print("Not implemented")
 
-
 if __name__ == '__main__':
-    print("Hey")
+
+	print("Hey")
+	apriori("Datasets/accidents.dat", 0.9)
