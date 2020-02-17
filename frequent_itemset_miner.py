@@ -116,8 +116,8 @@ def generate_candidates(items, k, freq_items_k_1):
 			for j in range(i + 1, freq_items_k_1.__len__()):
 				prefix_j = freq_items_k_1[j].keys[:-1]
 				if prefix_i.__str__().__eq__(prefix_j.__str__()):
-					prefix_i.extend([freq_items_k_1[i].keys[-1], freq_items_k_1[j].keys[-1]])
-					candidates.append(ItemSet(prefix_i))
+					prefix_j.extend([freq_items_k_1[i].keys[-1], freq_items_k_1[j].keys[-1]])
+					candidates.append(ItemSet(prefix_j))
 
 	return candidates
 
@@ -133,7 +133,7 @@ def apriori(filepath, minFrequency):
 		candidates = generate_candidates(items, k, frequent_sets)
 		frequent_sets = filter_freqset(dataset.transactionsString, candidates, minFrequency, len(dataset.transactions))
 		k += 1
-		print("ir ", candidates)
+		print("ir ", frequent_sets)
 
 
 def alternative_miner(filepath, minFrequency):
