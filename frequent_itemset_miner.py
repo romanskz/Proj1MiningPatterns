@@ -93,7 +93,11 @@ class ItemSet:
 	def __repr__(self):
 		return str(self)
 
+
 def filter_freqset(transanctionsString, candidates, minFrequency):
+	if candidates is None:
+		return None
+
 	ret_freq_sets = list()
 	for candi in candidates:
 		counter = 0
@@ -116,7 +120,14 @@ def generate_candidates(items, k, freq_items_k_1):
 			for j in range(i+1, freq_items_k_1.__len__()):
 				candidates.append(ItemSet(freq_items_k_1[i].keys + freq_items_k_1[j].keys))
 	else:
-		return None
+		candidates = list()
+		for i in range(freq_items_k_1.__len__()):
+			prefix_i = freq_items_k_1[i].keys[:-1]
+			for j in range(i + 1, freq_items_k_1.__len__()):
+				prefix_j = freq_items_k_1[j].keys[:-1]
+				if prefix_i.__str__().__eq__(prefix_j.__str__()):
+					candidates.append(ItemSet(prefix_i + prefix_i[-1] + prefix_j[-1]))
+
 	return candidates
 
 
@@ -127,11 +138,11 @@ def apriori(filepath, minFrequency):
 	items = list(dataset.items)
 	frequent_sets = []
 	k = 1
-	while k <= 2:
+	while frequent_sets or k == 1:
 		candidates = generate_candidates(items, k, frequent_sets)
 		frequent_sets = filter_freqset(dataset.transactionsString, candidates, minFrequency)
 		k += 1
-		print("ir ", candidates)
+		print("ir ", frequent_sets)
 
 
 def alternative_miner(filepath, minFrequency):
