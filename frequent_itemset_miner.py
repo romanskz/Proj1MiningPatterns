@@ -20,13 +20,7 @@ Do not change the signature of the apriori and alternative_miner methods as they
 
 __authors__ = "<write here your group, first name(s) and last name(s)>"
 """
-from datetime import datetime
-from itertools import combinations
 import re
-
-import Arrays as Arrays
-from numpy.distutils.system_info import freetype2_info
-
 
 class Dataset:
 	"""Utility class to manage a dataset stored in a external file."""
@@ -41,7 +35,7 @@ class Dataset:
 			lines = [line.strip() for line in open(filepath, "r")]
 			lines = [line for line in lines if line]  # Skipping blank lines
 			for line in lines:
-				transaction = sorted(list(map(int, line.split(" "))))
+				transaction = list(map(int, line.split(" ")))
 				self.transactions.append(transaction)
 				trans_string = ""
 				for item in transaction:
@@ -93,17 +87,17 @@ class ItemSet:
 	def __repr__(self):
 		return str(self)
 
-def filter_freqset(transanctionsString, candidates, minFrequency):
+def filter_freqset(transanctionsString, candidates, minFrequency, nbTransactions):
 	ret_freq_sets = list()
 	for candi in candidates:
-		counter = 0
+		counter = 0.0
 		for trans in transanctionsString:
 			if re.compile(candi.regex_pattern).search(trans) is not None:
-				counter += 1
-				if counter >= minFrequency:
+				counter += 1.0
+				#print("here "+str(candi)+ " "+ trans+ " "+str(counter))
+				if (counter/nbTransactions) >= minFrequency:
 					ret_freq_sets.append(candi)
 					break
-
 	return ret_freq_sets
 
 
@@ -129,7 +123,7 @@ def apriori(filepath, minFrequency):
 	k = 1
 	while k <= 2:
 		candidates = generate_candidates(items, k, frequent_sets)
-		frequent_sets = filter_freqset(dataset.transactionsString, candidates, minFrequency)
+		frequent_sets = filter_freqset(dataset.transactionsString, candidates, minFrequency, len(dataset.transactions))
 		k += 1
 		print("ir ", candidates)
 
@@ -142,4 +136,4 @@ def alternative_miner(filepath, minFrequency):
 
 if __name__ == '__main__':
 	print("Hey")
-	apriori("Datasets/toy.dat", 5)
+	apriori("Datasets/chess.dat", 0.9)
