@@ -21,6 +21,11 @@ Do not change the signature of the apriori and alternative_miner methods as they
 __authors__ = "<write here your group, first name(s) and last name(s)>"
 """
 from datetime import datetime
+from itertools import combinations
+import re
+
+import Arrays as Arrays
+from numpy.distutils.system_info import freetype2_info
 
 
 class Dataset:
@@ -30,15 +35,20 @@ class Dataset:
 		"""reads the dataset file and initializes files"""
 		self.transactions = list()
 		self.items = set()
+		self.transactionsString = list()
 
 		try:
 			lines = [line.strip() for line in open(filepath, "r")]
 			lines = [line for line in lines if line]  # Skipping blank lines
 			for line in lines:
-				transaction = list(map(int, line.split(" ")))
+				transaction = sorted(list(map(int, line.split(" "))))
 				self.transactions.append(transaction)
+				trans_string = ""
 				for item in transaction:
 					self.items.add(item)
+					trans_string += str(item) + " "
+
+				self.transactionsString.append(trans_string)
 		except IOError as e:
 			print("Unable to read dataset file!\n" + e)
 
@@ -55,20 +65,65 @@ class Dataset:
 		return self.transactions[i]
 
 
+class ItemSet:
+	def __init__(self, keys):
+
+		self.keys = sorted(keys)
+
+		# regex string to find the set in a transaction
+		# https://regex101.com/r/teyF5J/9/
+		regexStr = "^(\d+ )*"
+		strItems = "" # write item set as a string help in sorting
+		for nb in self.keys:
+			strItems += str(nb) + " "
+			regexStr += str(nb)+" (\d+ )*"
+
+		self.regex_pattern = regexStr
+		self.keys_string = strItems
+
+	def __cmp__(self, other):
+		return self.keys_string <= other.keys_string
+
+	def __eq__(self, other):
+		return self.keys_string.__eq__(other.keys_string)
+
+	def __str__(self):
+		return list.__str__(self.keys)
+
+
+
+def filter_freqset(transanctionsString, candidates, minFrequency):
+	ret_freq_sets = list()
+	for candi in candidates:
+		counter = 0
+		for trans in transanctionsString:
+			if re.compile(candi.regex_pattern).search(trans) is not None:
+				counter += 1
+				if counter >= minFrequency:
+					ret_freq_sets.append(candi)
+					break
+
+	return ret_freq_sets
+
+
+def generate_candidates(items, k, freq_items_k_1):
+	if(k ==1):
+		candidates = [ItemSet([nb]) for nb in items]
+	else:
+		None
+	return candidates
+
+
 def apriori(filepath, minFrequency):
 	"""Runs the apriori algorithm on the specified file with the given minimum frequency"""
 	# TODO: implementation of the apriori algorithm
 	dataset = Dataset(filepath)
-	print("Dataset items ")
-	dItems = dict.fromkeys(dataset.items, 0)
-	print("Dataset transactions ")
-	for l in dataset.transactions:
-		for e in l:
-			dItems[e] += 1
-	#newDict = dict(filter(lambda elem: dItems[elem]>=minFrequency, dataset.items))
-	print(len(dataset.transactions))
-	newDict = {key: value for (key, value) in dItems.items() if dItems[key]/len(dataset.transactions) >= minFrequency}
-	print("new Dict ", newDict)
+	items = list(dataset.items)
+	k = 1
+	candidates = generate_candidates(items, k, [])
+	frequent_sets = filter_freqset(dataset.transactionsString, candidates, minFrequency)
+	for c in candidates:
+		print("ir ", c)
 
 
 def alternative_miner(filepath, minFrequency):
@@ -76,7 +131,7 @@ def alternative_miner(filepath, minFrequency):
 	# TODO: either second implementation of the apriori algorithm or implementation of the depth first search algorithm
 	print("Not implemented")
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
 	print("Hey")
-	apriori("Datasets/accidents.dat", 0.9)
+	apriori("Datasets/toy.dat", 5)
