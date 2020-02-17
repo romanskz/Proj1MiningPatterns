@@ -68,7 +68,7 @@ class Dataset:
 class ItemSet:
 	def __init__(self, keys):
 
-		self.keys = sorted(keys)
+		self.keys = keys
 
 		# regex string to find the set in a transaction
 		# https://regex101.com/r/teyF5J/9/
@@ -88,9 +88,10 @@ class ItemSet:
 		return self.keys_string.__eq__(other.keys_string)
 
 	def __str__(self):
-		return list.__str__(self.keys)
+		return self.keys.__str__()
 
-
+	def __repr__(self):
+		return str(self)
 
 def filter_freqset(transanctionsString, candidates, minFrequency):
 	ret_freq_sets = list()
@@ -107,10 +108,15 @@ def filter_freqset(transanctionsString, candidates, minFrequency):
 
 
 def generate_candidates(items, k, freq_items_k_1):
-	if(k ==1):
+	if k == 1:
 		candidates = [ItemSet([nb]) for nb in items]
+	elif k == 2:
+		candidates = list()
+		for i in range(freq_items_k_1.__len__()):
+			for j in range(i+1, freq_items_k_1.__len__()):
+				candidates.append(ItemSet(freq_items_k_1[i].keys + freq_items_k_1[j].keys))
 	else:
-		None
+		return None
 	return candidates
 
 
@@ -119,11 +125,13 @@ def apriori(filepath, minFrequency):
 	# TODO: implementation of the apriori algorithm
 	dataset = Dataset(filepath)
 	items = list(dataset.items)
+	frequent_sets = []
 	k = 1
-	candidates = generate_candidates(items, k, [])
-	frequent_sets = filter_freqset(dataset.transactionsString, candidates, minFrequency)
-	for c in candidates:
-		print("ir ", c)
+	while k <= 2:
+		candidates = generate_candidates(items, k, frequent_sets)
+		frequent_sets = filter_freqset(dataset.transactionsString, candidates, minFrequency)
+		k += 1
+		print("ir ", candidates)
 
 
 def alternative_miner(filepath, minFrequency):
