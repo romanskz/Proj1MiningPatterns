@@ -111,11 +111,11 @@ def generate_candidates(items, k, freq_items_k_1):
 				candidates.append(ItemSet(freq_items_k_1[i].keys + freq_items_k_1[j].keys))
 	else:
 		candidates = list()
-		for i in range(freq_items_k_1.__len__()):
+		for i in range(len(freq_items_k_1)):
 			prefix_i = freq_items_k_1[i].keys[:-1]
-			for j in range(i + 1, freq_items_k_1.__len__()):
+			for j in range(i + 1, len(freq_items_k_1)):
 				prefix_j = freq_items_k_1[j].keys[:-1]
-				if prefix_i.__str__().__eq__(prefix_j.__str__()):
+				if str(prefix_i).__eq__(str(prefix_j)):
 					prefix_j.extend([freq_items_k_1[i].keys[-1], freq_items_k_1[j].keys[-1]])
 					candidates.append(ItemSet(prefix_j))
 
@@ -144,4 +144,4 @@ def alternative_miner(filepath, minFrequency):
 
 if __name__ == '__main__':
 	print("Hey")
-	apriori("Datasets/chess.dat", 0.9)
+	apriori("Datasets/accidents.dat", 0.9)
