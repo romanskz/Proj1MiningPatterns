@@ -22,6 +22,7 @@ __authors__ = "<write here your group, first name(s) and last name(s)>"
 """
 import re
 
+
 class Dataset:
 	"""Utility class to manage a dataset stored in a external file."""
 
@@ -30,7 +31,6 @@ class Dataset:
 		self.transactions = list()
 		self.items = set()
 		self.transactionsString = list()
-
 		try:
 			lines = [line.strip() for line in open(filepath, "r")]
 			lines = [line for line in lines if line]  # Skipping blank lines
@@ -41,10 +41,10 @@ class Dataset:
 				for item in transaction:
 					self.items.add(item)
 					trans_string += str(item) + " "
-
 				self.transactionsString.append(trans_string)
 		except IOError as e:
 			print("Unable to read dataset file!\n" + e)
+		self.last_item = max(self.items)
 
 	def trans_num(self):
 		"""Returns the number of transactions in the dataset"""
@@ -61,16 +61,15 @@ class Dataset:
 
 class ItemSet:
 	def __init__(self, keys):
-
 		self.keys = keys
 
 		# regex string to find the set in a transaction
 		# https://regex101.com/r/teyF5J/9/
 		regexStr = "^(\d+ )*"
-		strItems = "" # write item set as a string help in sorting
+		strItems = ""  # write item set as a string help in sorting
 		for nb in self.keys:
 			strItems += str(nb) + " "
-			regexStr += str(nb)+" (\d+ )*"
+			regexStr += str(nb) + " (\d+ )*"
 
 		self.regex_pattern = regexStr
 		self.keys_string = strItems
@@ -99,7 +98,7 @@ def filter_freqset(transanctionsString, candidates, minFrequency, nbTransactions
 		freq = counter / nbTransactions
 		if freq >= minFrequency:
 			ret_freq_sets.append((candi, freq))
-			ret_freq_printed_set += str(candi) + " ("+str(freq)+")\n"
+			ret_freq_printed_set += str(candi) + " (" + str(freq) + ")\n"
 
 	return ret_freq_sets, ret_freq_printed_set
 
@@ -109,16 +108,16 @@ def generate_candidates(items, k, freq_items_k_1):
 		candidates = [ItemSet([nb]) for nb in items]
 	elif k == 2:
 		candidates = list()
-		for i in range(freq_items_k_1.__len__()):
-			for j in range(i+1, freq_items_k_1.__len__()):
+		for i in range(len(freq_items_k_1)):
+			for j in range(i + 1, len(freq_items_k_1)):
 				candidates.append(ItemSet(freq_items_k_1[i][0].keys + freq_items_k_1[j][0].keys))
 	else:
 		candidates = list()
-		for i in range(freq_items_k_1.__len__()):
+		for i in range(len(freq_items_k_1)):
 			prefix_i = freq_items_k_1[i][0].keys[:-1]
-			for j in range(i + 1, freq_items_k_1.__len__()):
+			for j in range(i + 1, len(freq_items_k_1)):
 				prefix_j = freq_items_k_1[j][0].keys[:-1]
-				if prefix_i.__str__().__eq__(prefix_j.__str__()):
+				if str(prefix_i).__eq__(str(prefix_j)):
 					prefix_j.extend([freq_items_k_1[i][0].keys[-1], freq_items_k_1[j][0].keys[-1]])
 					candidates.append(ItemSet(prefix_j))
 
@@ -141,11 +140,80 @@ def apriori(filepath, minFrequency):
 	print(result_printed)
 
 
+# Alternative miner (DFS)
+
+
+def print_output(set_i, transactions_with_set, nb_transactions):
+	str1 = str(sorted(list(set_i)))
+	#print(transactions_with_set, nb_transactions)
+	str2 = " (" + str(float(transactions_with_set / nb_transactions)) + ")"
+	print(str1 + str2)
+
+
+def dfs(set_i: list, vertical_rep_db, last_item, min_freq, nb_transactions, nb_transactions_of_the_set, vertical_rep_empty_set):
+	#if len(set_i) > 1 and float(nb_transactions_of_the_set / nb_transactions) > min_freq:
+	if set_i and float(nb_transactions_of_the_set / nb_transactions) > min_freq:
+		print_output(set_i, nb_transactions_of_the_set, nb_transactions)
+	for item in vertical_rep_db:
+		set_i2 = set_i.copy()
+		set_i2.add(item)
+		vert_proj_D_I_U_i, all_transactions = \
+			get_vert_projected_db(set_i2, vertical_rep_db, last_item, nb_transactions, min_freq, vertical_rep_empty_set)
+		dfs(set_i2, vert_proj_D_I_U_i, last_item, min_freq, nb_transactions, len(all_transactions), vertical_rep_empty_set)
+
+
+def get_vertical_rep(transactions):
+	"""
+	Create vertical representation of the initial database (with the element 0 corresponding to the empty set)
+	"""
+	vertical_rep = dict()
+	#vertical_rep[0] = set()
+	for i in range(len(transactions)):
+		#vertical_rep[0].add(i+1)
+		for elem in transactions[i]:
+			if elem not in vertical_rep:
+				vertical_rep[elem] = set()
+			vertical_rep[elem].add(i + 1)
+	return vertical_rep
+
+
+def get_vert_projected_db(elems : set, vertical_rep, last_item, nb_inital_transactions, min_frequency, vertical_rep_empty_set):
+	vertical_rep_res = dict()
+	#print("elems",elems)
+	#All transactions existing in order to create
+	set_of_elem = vertical_rep_empty_set
+	for e in elems:
+		if e in vertical_rep:
+			set_of_elem = set_of_elem.intersection(vertical_rep[e])
+	#print('set_of_elem', set_of_elem)
+	all_transactions = set_of_elem.copy()
+	#print("max", max(elems))
+	for i in range(max(elems) + 1, last_item + 1):
+		if i in vertical_rep:
+			res_elem_i = set_of_elem.intersection(vertical_rep[i])
+			all_transactions = all_transactions.union(res_elem_i)
+			#print("res_elem_i", res_elem_i, float(len(res_elem_i) / nb_inital_transactions))
+			if res_elem_i and float(len(res_elem_i) / nb_inital_transactions) > min_frequency:
+				vertical_rep_res[i] = res_elem_i
+	#if elems.__eq__({5,29,58}):
+	#    print("vertical_rep_res",elems, len(all_transactions))
+	return vertical_rep_res, all_transactions
+
+
 def alternative_miner(filepath, minFrequency):
 	"""Runs the alternative frequent itemset mining algorithm on the specified file with the given minimum frequency"""
 	# TODO: either second implementation of the apriori algorithm or implementation of the depth first search algorithm
-	print("Not implemented")
+	# dfs
+	dataset = Dataset(filepath)
+	# dfs(list(), dataset.transactions, dataset.items, minFrequency, len(dataset.transactions))
+	#print("proj", get_projected_db(dataset.transactions, [1, 2]))
+	#print("vert rep", get_vertical_rep(dataset.transactions))
+	#print(get_vert_projected_db({3}, get_vertical_rep(dataset.transactions), dataset.last_item, len(dataset.transactions), minFrequency))
+	vertical_rep_empty_set = set([x for x in range(1, len(dataset.transactions) + 1)])
+	dfs(set(), get_vertical_rep(dataset.transactions), dataset.last_item, minFrequency, len(dataset.transactions),
+		len(dataset.transactions), vertical_rep_empty_set)
 
 
 if __name__ == '__main__':
-	apriori("Datasets/chess.dat", 0.9)
+	#apriori("Datasets/chess.dat", 0.9)
+	alternative_miner("Datasets/chess.dat", 0.9)
