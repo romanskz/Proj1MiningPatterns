@@ -35,7 +35,7 @@ class Dataset:
 			lines = [line.strip() for line in open(filepath, "r")]
 			lines = [line for line in lines if line]  # Skipping blank lines
 			for line in lines:
-				transaction = sorted(list(map(int, line.split(" "))))
+				transaction = list(map(int, line.split(" ")))
 				self.transactions.append(transaction)
 				trans_string = ""
 				for item in transaction:
@@ -87,18 +87,21 @@ class ItemSet:
 	def __repr__(self):
 		return str(self)
 
+
 def filter_freqset(transanctionsString, candidates, minFrequency, nbTransactions):
 	ret_freq_sets = list()
+	ret_freq_printed_set = ""
 	for candi in candidates:
 		counter = 0.0
 		for trans in transanctionsString:
 			if re.compile(candi.regex_pattern).search(trans) is not None:
 				counter += 1.0
-				if counter/nbTransactions >= minFrequency:
-					ret_freq_sets.append(candi)
-					break
+		freq = counter / nbTransactions
+		if freq >= minFrequency:
+			ret_freq_sets.append((candi, freq))
+			ret_freq_printed_set += str(candi) + " ("+str(freq)+")\n"
 
-	return ret_freq_sets
+	return ret_freq_sets, ret_freq_printed_set
 
 
 def generate_candidates(items, k, freq_items_k_1):
@@ -108,15 +111,15 @@ def generate_candidates(items, k, freq_items_k_1):
 		candidates = list()
 		for i in range(freq_items_k_1.__len__()):
 			for j in range(i+1, freq_items_k_1.__len__()):
-				candidates.append(ItemSet(freq_items_k_1[i].keys + freq_items_k_1[j].keys))
+				candidates.append(ItemSet(freq_items_k_1[i][0].keys + freq_items_k_1[j][0].keys))
 	else:
 		candidates = list()
-		for i in range(len(freq_items_k_1)):
-			prefix_i = freq_items_k_1[i].keys[:-1]
-			for j in range(i + 1, len(freq_items_k_1)):
-				prefix_j = freq_items_k_1[j].keys[:-1]
-				if str(prefix_i).__eq__(str(prefix_j)):
-					prefix_j.extend([freq_items_k_1[i].keys[-1], freq_items_k_1[j].keys[-1]])
+		for i in range(freq_items_k_1.__len__()):
+			prefix_i = freq_items_k_1[i][0].keys[:-1]
+			for j in range(i + 1, freq_items_k_1.__len__()):
+				prefix_j = freq_items_k_1[j][0].keys[:-1]
+				if prefix_i.__str__().__eq__(prefix_j.__str__()):
+					prefix_j.extend([freq_items_k_1[i][0].keys[-1], freq_items_k_1[j][0].keys[-1]])
 					candidates.append(ItemSet(prefix_j))
 
 	return candidates
@@ -127,13 +130,15 @@ def apriori(filepath, minFrequency):
 	# TODO: implementation of the apriori algorithm
 	dataset = Dataset(filepath)
 	items = list(dataset.items)
-	frequent_sets = []
+	frequent_sets = ([], "")
 	k = 1
-	while frequent_sets or k == 1:
-		candidates = generate_candidates(items, k, frequent_sets)
+	result_printed = ""
+	while frequent_sets[0] or k == 1:
+		candidates = generate_candidates(items, k, frequent_sets[0])
 		frequent_sets = filter_freqset(dataset.transactionsString, candidates, minFrequency, len(dataset.transactions))
 		k += 1
-		print("ir ", frequent_sets)
+		result_printed += frequent_sets[1]
+	print(result_printed)
 
 
 def alternative_miner(filepath, minFrequency):
@@ -143,5 +148,4 @@ def alternative_miner(filepath, minFrequency):
 
 
 if __name__ == '__main__':
-	print("Hey")
-	apriori("Datasets/accidents.dat", 0.9)
+	apriori("Datasets/chess.dat", 0.9)
