@@ -152,7 +152,16 @@ def print_output(set_i: set, transactions_with_set, nb_transactions):
 
 def dfs(set_i: set, vertical_rep_db, last_item, min_freq, nb_transactions, nb_transactions_of_the_set,
 		vertical_rep_empty_set):
-	# if len(set_i) > 1 and float(nb_transactions_of_the_set / nb_transactions) > min_freq:
+	"""
+	:param set_i: set of the current frequent items
+	:param vertical_rep_db: the vertical representation of the projected database under set_i
+	:param last_item: the biggest item in the transactions
+	:param min_freq: the minimal frequency
+	:param nb_transactions: the total number of transactions of the basic database
+	:param nb_transactions_of_the_set: the total number of transactions of set_i
+	:param vertical_rep_empty_set: the set of all the number of transactions
+	:return: Print all the itemset more or equally frequent than min_freq
+	"""
 	if 0 not in set_i:
 		return
 	if len(set_i) > 1 and float(nb_transactions_of_the_set / nb_transactions) >= min_freq:
@@ -168,7 +177,8 @@ def dfs(set_i: set, vertical_rep_db, last_item, min_freq, nb_transactions, nb_tr
 
 def get_vertical_rep(transactions):
 	"""
-	Create vertical representation of the initial database (with the element 0 corresponding to the empty set)
+	:param transactions: list of all the transactions of the database
+	:return: Vertical representation of the initial database (with the element 0 corresponding to the empty set)
 	"""
 	vertical_rep = dict()
 	vertical_rep[0] = set()
@@ -181,41 +191,42 @@ def get_vertical_rep(transactions):
 	return vertical_rep
 
 
-def get_vert_projected_db(elems: set, vertical_rep, last_item, nb_inital_transactions, min_frequency,
+def get_vert_projected_db(elems: set, vertical_rep, last_item, nb_initial_transactions, min_frequency,
 						  vertical_rep_empty_set):
+	"""
+	:param elems: items I
+	:param vertical_rep: the vertical representation of the database D
+	:param last_item: the greatest item in the transactions
+	:param nb_initial_transactions: the total number of transactions of the basic database
+	:param min_frequency: the minimal frequency
+	:param vertical_rep_empty_set: the set of all the number of transactions
+	:return: The vertical representation of the projected database D under items I
+	"""
 	vertical_rep_res = dict()
-	# print("elems",elems)
-	# All transactions existing in order to create
 	set_of_elem = vertical_rep_empty_set
 	for e in elems:
 		if e in vertical_rep:
 			set_of_elem = set_of_elem.intersection(vertical_rep[e])
-	# print('set_of_elem', set_of_elem)
 	all_transactions = set_of_elem.copy()
-	# print("max", max(elems))
 	for i in range(max(elems) + 1, last_item + 1):
 		if i in vertical_rep:
 			res_elem_i = set_of_elem.intersection(vertical_rep[i])
 			all_transactions = all_transactions.union(res_elem_i)
-			# print("res_elem_i", res_elem_i, float(len(res_elem_i) / nb_inital_transactions))
-			if res_elem_i and float(len(res_elem_i) / nb_inital_transactions) >= min_frequency:
+			if res_elem_i and float(len(res_elem_i) / nb_initial_transactions) >= min_frequency:
 				vertical_rep_res[i] = res_elem_i
-	# if elems.__eq__({5,29,58}):
-	#    print("vertical_rep_res",elems, len(all_transactions))
 	return vertical_rep_res, all_transactions
 
 
 def alternative_miner(filepath, minFrequency):
-	"""Runs the alternative frequent itemset mining algorithm on the specified file with the given minimum frequency"""
-	# TODO: either second implementation of the apriori algorithm or implementation of the depth first search algorithm
-	# dfs
+	"""Runs the alternative frequent itemset mining algorithm on the specified file with the given minimum frequency
+
+		Depth first search algorithm
+	"""
 	dataset = Dataset(filepath)
-	# dfs(list(), dataset.transactions, dataset.items, minFrequency, len(dataset.transactions))
-	# print("proj", get_projected_db(dataset.transactions, [1, 2]))
-	# print("vert rep", get_vertical_rep(dataset.transactions))
-	# print(get_vert_projected_db({3}, get_vertical_rep(dataset.transactions), dataset.last_item, len(dataset.transactions), minFrequency))
+	# set with all the transaction number
 	vertical_rep_empty_set = set([x for x in range(1, len(dataset.transactions) + 1)])
-	vert_proj_db = get_vert_projected_db({0}, get_vertical_rep(dataset.transactions), dataset.last_item, len(dataset.transactions), minFrequency, vertical_rep_empty_set)[0]
+	vert_proj_db = get_vert_projected_db({0}, get_vertical_rep(dataset.transactions), dataset.last_item,
+										 len(dataset.transactions), minFrequency, vertical_rep_empty_set)[0]
 	dfs({0}, vert_proj_db, dataset.last_item, minFrequency, len(dataset.transactions),
 		len(dataset.transactions), vertical_rep_empty_set)
 
