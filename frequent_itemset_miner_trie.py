@@ -36,6 +36,7 @@ class TrieNode:
         self.support_counter = 0
         self.value = value
         self.children = []
+        self.support_ratio = 0.0
 
     def insert(self, value):
         child = TrieNode(value)
@@ -61,11 +62,23 @@ def generate_candidates(items, root_node: TrieNode, k):
             root_node.insert(value)
 
     else:
-        generate_candidates_from__trie(root_node, k)
-    print("finish generate candidate")
+        generate_candidates_from__trie(root_node, k, 0)
 
 
-def generate_candidates_from__trie(root_node: TrieNode, k):
+def generate_candidates_from__trie(root_node: TrieNode, k, curr_level):
+    father_leaves_level = k - 2
+    if curr_level < father_leaves_level:
+        #not reached the father's level iterate to reach them
+        for child in root_node.children:
+            generate_candidates_from__trie(child,k, curr_level+1)
+    else:
+        #on the father's level we merge the children
+        for i in range(0, len(root_node.children)):
+            for j in range(i + 1, len(root_node.children)):
+                root_node.children[i].insert(root_node.children[j].value)
+
+
+def generate_candidates_from__trie2(root_node: TrieNode, k):
     # the idea is to merge the leaves of the same parent
     # we will jump to the fathers of the leaves
     # had to iterate each level like bfs. store the current level in a node
@@ -94,15 +107,13 @@ def generate_candidates_from__trie(root_node: TrieNode, k):
         father = curr_iter[idx]
         for i in range(0, len(father.children)):
             for j in range(i+1, len(father.children)):
-                curr_iter[idx].children[i].insert(father.children[j].value)
+                curr_level_nodes[idx].children[i].insert(father.children[j].value)
 
 
 
 def count_support(transactions, root_node: TrieNode):
     for trans in transactions:
         count_support_in_one_transaction(trans, 0, root_node)
-
-    print("finish count support")
 
 
 def count_support_in_one_transaction(transaction, current_el_in_trans, root_node: TrieNode):
@@ -112,19 +123,56 @@ def count_support_in_one_transaction(transaction, current_el_in_trans, root_node
             for el in range(current_el_in_trans, len(transaction)):
                 child = root_node.get_child(transaction[el])
                 if child:
-                    count_support_in_one_transaction(transaction,current_el_in_trans+1, child)
+                    count_support_in_one_transaction(transaction, current_el_in_trans+1, child)
 
 
-def filter_unfrequent_items(root_node: TrieNode, minFrequency, nbTransactions):
+result_dict = dict()
+resultString =""
+
+def filter_unfrequent_items(root_node: TrieNode, minFrequency, nbTransactions, itemSetList):
     children = list(root_node.children) #iterate on a copy so that we can remove unfrequent children from the trie.
     for child in children:
         if not child.is_leaf():
-            return filter_unfrequent_items(child, minFrequency,nbTransactions)
+            itemSetList.append(child.value)
+            filter_unfrequent_items(child, minFrequency,nbTransactions, itemSetList)
         else:
             freq = child.support_counter / nbTransactions
             if freq < minFrequency:
-                root_node.children.remove(child)
-    return not root_node.is_leaf() #frequent set is empty then we can continue
+                root_node.children.remove(root_node.get_child(child.value))
+            else:
+                root_node.get_child(child.value).support_ratio = freq
+                itemSetList.append(child.value)
+                if not result_dict.get(str(itemSetList)):
+                    result_dict[str(itemSetList)] = freq
+                    print(str(itemSetList) + "  (" + str(freq) + ")")
+                itemSetList.clear()
+
+
+
+def filter_unfrequent_items2(root_node: TrieNode, minFrequency, nbTransactions):
+    #children = root_node.children #iterate on a copy so that we can remove unfrequent children from the trie.
+    list_child_to_delete = []
+    print("rooot : ", root_node.value)
+    print(" root children: ", )
+    for child in root_node.children:
+        print("root : ", root_node.value, " child : ", str(child.value))
+        if not child.is_leaf():
+            filter_unfrequent_items2(child, minFrequency,nbTransactions)
+        else:
+            freq = child.support_counter / nbTransactions
+            #print("freq", freq)
+            if freq < minFrequency:
+                #root_node.children.remove(root_node.get_child(child.value))
+                print("freq Remove", freq)
+                list_child_to_delete.append(child)
+            else:
+                print("freq take", freq)
+                root_node.get_child(child.value).support_ratio = freq
+
+    for x in list_child_to_delete:
+        root_node.children.remove(x)
+
+     #frequent set is empty then we can continue
 
 
 def apriori(filepath, minFrequency):
@@ -133,29 +181,35 @@ def apriori(filepath, minFrequency):
     transactions = dataset.transactions
 
     root_node = TrieNode(-1)
-    generate_candidates(items, root_node, 1)
-    count_support(transactions, root_node)
-    still_candidates = filter_unfrequent_items(root_node, minFrequency, len(transactions))
-    k = 2
-    while k<=4: #still_candidates doesn't work
+    k = 1
+    while True:
         generate_candidates(items, root_node, k)
         count_support(transactions, root_node)
-        still_candidates = filter_unfrequent_items(root_node, minFrequency, len(transactions))
+
+        before_freq_size = len(result_dict)
+
+        filter_unfrequent_items(root_node, minFrequency, len(transactions),[])
+
+        if len(result_dict) == before_freq_size:
+            break
         k += 1
-    print_trie4(root_node)
+
+    for key in result_dict.keys():
+        print(key + "  (" + str(result_dict[key]) + ")")
 
 
-def print_trie(root_trie: TrieNode):
-    print(root_trie.value)
+
+def print_trie(root_trie: TrieNode, nb):
+    print("[" + str(root_trie.value) +"] ("+str(root_trie.support_ratio)+")" + "- "+ str(root_trie.support_counter/nb < 0.9))
     for x in root_trie.children:
-        print_trie(x)
+        print_trie(x, nb)
 
 
-def print_trie2(root_trie: TrieNode):
+def print_trie2(root_trie: TrieNode, nb):
     print(root_trie.value)
     for x in root_trie.children:
         for j in x.children:
-            print("("+str(x.value)+ " "+str(j.value)+")")
+            print("["+str(x.value)+ ", "+str(j.value)+"] ("+str(j.support_ratio)+")" + "- "+ str(j.support_counter/nb < 0.9))
 
 
 def print_trie3(root_trie: TrieNode):
@@ -163,7 +217,8 @@ def print_trie3(root_trie: TrieNode):
     for x in root_trie.children:
         for j in x.children:
             for z in j.children:
-                print("("+str(x.value)+ " "+str(j.value)+ " "+ str(z.value)+")")
+                print("["+str(x.value)+ ", "+str(j.value)+ ", "+ str(z.value)+"]  ("+str(z.support_ratio)+")")
+
 
 def print_trie4(root_trie: TrieNode):
     print(root_trie.value)
@@ -172,6 +227,16 @@ def print_trie4(root_trie: TrieNode):
             for z in j.children:
                 for w in z.children:
                     print("("+str(x.value)+ " "+str(j.value)+ " "+ str(z.value)+ " "+ str(w.value)+")")
+
+
+def print_trie5(root_trie: TrieNode):
+    print(root_trie.value)
+    for x in root_trie.children:
+        for j in x.children:
+            for z in j.children:
+                for w in z.children:
+                    for t in w.children:
+                        print("("+str(x.value)+ " "+str(j.value)+ " "+ str(z.value)+ " "+ str(w.value)+ " "+ str(t.value)+")")
 
 
 if __name__ == '__main__':
