@@ -155,7 +155,7 @@ def dfs(set_i: set, vertical_rep_db, last_item, min_freq, nb_transactions, nb_tr
 	# if len(set_i) > 1 and float(nb_transactions_of_the_set / nb_transactions) > min_freq:
 	if 0 not in set_i:
 		return
-	if len(set_i) > 1 and float(nb_transactions_of_the_set / nb_transactions) > min_freq:
+	if len(set_i) > 1 and float(nb_transactions_of_the_set / nb_transactions) >= min_freq:
 		print_output(set_i, nb_transactions_of_the_set, nb_transactions)
 	for item in vertical_rep_db:
 		set_i2 = set_i.copy()
@@ -198,7 +198,7 @@ def get_vert_projected_db(elems: set, vertical_rep, last_item, nb_inital_transac
 			res_elem_i = set_of_elem.intersection(vertical_rep[i])
 			all_transactions = all_transactions.union(res_elem_i)
 			# print("res_elem_i", res_elem_i, float(len(res_elem_i) / nb_inital_transactions))
-			if res_elem_i and float(len(res_elem_i) / nb_inital_transactions) > min_frequency:
+			if res_elem_i and float(len(res_elem_i) / nb_inital_transactions) >= min_frequency:
 				vertical_rep_res[i] = res_elem_i
 	# if elems.__eq__({5,29,58}):
 	#    print("vertical_rep_res",elems, len(all_transactions))
